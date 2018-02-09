@@ -1,0 +1,315 @@
+---
+title: " [EDA]"
+author: "Vinay S"
+date: "27 September 2017"
+output: html_document
+---
+
+```{r,include=FALSE,echo=FALSE}
+setwd("C:/Users/Administrator/Desktop/ios")
+```
+
+
+```{r,include=FALSE,echo=FALSE}
+library(knitr)
+library(xtable)
+library(VIM)
+library(mice)
+library(reshape2)
+library(dplyr)
+```
+
+###=========================================================================
+## Q No 1
+
+####  *Data Mart*
+
+* A database, or collection of databases, designed to help managers make strategic decisions about their business. Whereas a data warehouse combines databases across an entire enterprise, data marts are usually smaller and focus on a particular subject or department. Some data marts, called dependent data marts,are subsets of larger data warehouses.
+
+* Listed below are the reasons to create a data mart:
+    
+    + To partition data in order to impose access control strategies.
+    
+    + To speed up the queries by reducing the volume of data to be scanned.
+    
+    + To segment data into different hardware platforms.
+    
+    + To structure data in a form suitable for a user access tool.
+
+###            --------------------------------
+
+#### *Data Lake*
+  * A data lake is a storage repository that holds an enormous amount of raw or refined data in native format until it is accessed.
+    
+  * The term data lake is usually associated with Hadoop-oriented object storage in which an organization's data is loaded into the Hadoop platform and then business analytics and data-mining tools are applied to the data where it resides on the Hadoop cluster.
+  
+  * Data lakes can also be used effectively without incorporating Hadoop depending on the needs and goals of the organization. 
+  * Its also called **large data pool**
+    
+  * eg 
+    + 1) Microsoft Azure Data lake
+    + 2) IBM Data lake
+
+###            --------------------------------
+
+#### *Data warehouse*
+  * A data warehouse is constructed by integrating data from multiple heterogeneous sources. It supports analytical reporting, structured and/or ad hoc queries and decision making.
+  
+  * The term "Data Warehouse" was first coined by Bill Inmon in 1990. According to Inmon, a data warehouse is a subject oriented, integrated, time-variant, and non-volatile collection of data. This data helps analysts to take informed decisions in an organization.
+  
+  * A data warehouse is a database, which is kept separate from the organization's operational database.
+  
+  * There is no frequent updating done in a data warehouse.
+  
+  * A data warehouse helps executives to organize, understand, and use their data to take strategic decisions.
+
+
+###            --------------------------------
+
+####  *DB2*
+
+  * DB2 is a family of relational database management system (RDBMS) products from IBM that serve a number of different operating system platforms.
+  
+  * According to IBM, DB2 leads in terms of database market share and performance.
+  
+  * Although DB2 products are offered for UNIX-based systems and personal computer operating systems, DB2 trails Oracle's database products in UNIX-based systems and Microsoft's Access in Windows systems
+
+###-----------------------------------------------------------------------------------------------------------------
+
+## Q No 2
+
+### Supervised and Unsupervised Learning
+
+```{r,echo=FALSE}
+
+a=paste("In Supervised learning we find the function f"," which can be used to assign a class or value to unseen observations",collapse="\n")
+a1=paste("Unsupervised learning is a technique which" ," deals without the labelling of observations",collapse = "\n")
+b=paste("Classification and regression are main two"," aspects come under superviswd learning",collapse="\n")
+b1="Clustering is the type of unsupervised learning"
+c=paste("In supervised learning model performance can be","checked by comparing actual labels with predicted labels",collapse="\n")
+c1=paste("Model performance measure is quite"," difficult in unsupervised learning",collapse="\n")
+d=paste("There is trining and testing data in supervised learning")
+d1=paste("There is no training and test data in unsupervised learning")
+
+kable(xtable(data.frame(Supervised=c(a,b,c,d),Unsupervised=c(a1,b1,c1,d1))))
+```
+
+
+###-----------------------------------------------------------------------------------------------------------------
+
+## Q No 3
+
+### a) Model
+
+```{r}
+data<-read.csv("data_pca.csv",header = TRUE)
+pca<-prcomp(data,scale. = TRUE)
+```
+
+####-------------------------------------
+
+### b) Screeplot
+
+```{r}
+screeplot(pca,ylim=c(0,40),col="blue")
+screeplot(pca,ylim=c(0,40),type="l")
+```
+
+####-------------------------------------
+
+### c) Model components
+
+#### `sdev` 
+
+```{r}
+sdev <- pca$sdev
+```
+
+* `sdev` is a vector of standard deviation of all principle components in the model.
+* It is always in decreasing order, the component having more variation occurs first.
+* By squaring `sdev` we get the variances of corresponding principle components, which are nothing but the Eigen values of the correlation matrix of given data.
+* One can decide how many principle components should be retained for fixed level of confidence.
+
+####-------------------------------------
+
+#### `rotation`
+
+```{r}
+rotation <- pca$rotation
+```
+
+* `rotation` is a square matrix, which is nothing but the eigen vector of correlation/covariance matrix of data
+* `rotation` in `prcomp` is equivalent to `loadings` in `princomp`.
+* This is used as weight matrix(non significant columns set to be zero) for reconstructing the original data values.
+* The transpose of the same is multiplied to the principle components to reconstruct the data.
+
+####-------------------------------------
+
+#### `center` and `scale`
+
+```{r}
+center <- pca$center
+scale <- pca$scale
+```
+
+* `center` is a vector of all variable means.
+* `scale` is a vector of all variable standard deviations.
+* both are necessary for standardising the data.
+
+####-------------------------------------
+
+#### `x`
+
+```{r}
+x <- pca$x
+  #scale(data)%*%eigen(cor(data))$vector
+  #scale(data)%*%pca$rotation
+```
+
+* `x` is equivalent to `scores` in `princomp`
+*  x is nothing but tne principle component matrix
+*  It is matrix multiplication of scaled data and the eigen vectors matrix.
+
+####-------------------------------------
+
+#### Eigen values by using `sdev`
+
+```{r}
+eigen.value <- (pca$sdev)^2
+eigen.value1<-eigen(cor(data))$values
+
+cor(eigen.value,eigen.value1)
+
+```
+
+####-------------------------------------
+
+### d) cumulative variance explained
+
+```{r}
+cum.variation <- cumsum(eigen.value)/sum(eigen.value)
+plot(x=1:length(eigen.value),y=cum.variation,type = "l",ylim=c(0.5,1))
+abline(h=0.8)
+```
+
+####-------------------------------------
+
+### e) Number of PC's for retaining 80% of variation
+
+```{r}
+sum(cum.variation <= 0.80)
+```
+
+* Only first principle component is enough for explaining 80% of variation in the data.
+
+####-------------------------------------
+
+### f) `biplot`
+
+```{r}
+par(pty="m")
+biplot(pca,choices = c(1,2),col=c("black","purple"),cex=.8)
+```
+
+* There are two things to consider in biplot output
+    + The direction of arrow
+    + The magnitude (length) of arrow
+* As all the arrows are projected almost in same direction, we conclude that they vary in same direction.
+* Most of the arrows are alongside of PC1 axis, means as PC1 increases there is increase in these variables and vice versa.
+* The length of arrow gives the amount of variation in corresponding variable as compared to other variables.
+* PC2 is not that much matter to any of the variables because most of them are perpendicular to PC2,except the terminal ones.
+
+###-------------------------------------------------------------------------------------------------------------------------
+
+## Q No 4
+
+### Loading the airquality dataset 
+```{r}
+air<-airquality
+```
+
+### a. Percentage of nulls in each column
+```{r}
+percent.Null<-apply(air,2,function(x) sum(is.na(x))/length(x)*100)
+percent.Null1<-air%>%summarise_all(funs(100*mean(is.na(.))))
+
+percent.Null
+```
+
+####--------------------------------------------
+
+### b."aggr" plot for vizualising % of missing values
+```{r,echo=FALSE}
+library(VIM)
+aggr(air)
+```
+
+####--------------------------------------------
+
+### c. Impute missing values in the ozone column using  package `mice`
+
+#### Getting pattern of missing values
+```{r}
+library(mice)
+md.pattern(air)
+
+marginplot(air[c(1,2)])
+```
+
+The pattern tells us whether the missing values are random or if there is any pattern in there distribution.
+
+* 111 samples have no missing values
+* 35 samples have missing values in Ozone
+* 5 samples have missing values in Solar.R
+* 2 samples have missing values in both Solar.R and Ozone
+* Total missing values in airquality are 44, out of which 37 in Ozone and 7 in Solar.R
+
+* Marginplot is vizualisation of distribution of Ozone for missing and available values of Solar.R and vice-versa.
+
+####-------------------------------------
+
+#### Imputing the missing data
+
+```{r}
+imp.air <- mice(air,m=5,maxit=50,meth='pmm',seed=500)  # One can use different methods instead `pmm`
+
+summary(imp.air)
+```
+
+* It gives 5 imputed data sets for each missing observations of each column.
+
+
+#### Checking for some columns
+
+```{r}
+imp.air$imp$Ozone
+imp.air$imp$Solar.R
+```
+
+
+#### Replacing missing values with imputed values
+
+```{r}
+# I Prefered the second data set of imputed
+complete.air<-complete(imp.air,2)
+
+aggr(complete.air)
+```
+
+
+####  distribution of original and imputed data
+
+```{r}
+library(lattice)
+xyplot(imp.air,Ozone ~Solar.R+Wind+Temp,pch=18,cex=1)  # Scatterplot
+
+densityplot(imp.air)    # Density plot
+
+stripplot(imp.air, pch = 20, cex = 1.2)   # strip plot
+```
+
+* The observed values are in bluecolor while imputed data is in magenta colour. The pattern says that the imputed values are plausible.
+
+###-------------------------------------------------------------------------------------------------------------------------
+
+
